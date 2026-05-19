@@ -67,9 +67,9 @@ steps:
 substitutions:
   _REGION: 'asia-southeast2'   # Jakarta Region
   _API_URL: 'https://jejakhijau-api-dummy.a.run.app' # Akan diisi di Trigger nanti
-  _GEMINI_API_KEY: 'YOUR_KEY_HERE'
-  _DATABASE_URL: 'file:./dev.db'
-  _JWT_SECRET: 'production-secret-min-32-characters-!!'
+  _GEMINI_API_KEY: 'AIzaSyAxQFdpXqvGTbyzJcM5cxvgVe1dpJgDvb0'
+  _DATABASE_URL: 'postgresql://postgres:qG%2FJt%7Bq%40V-%5E%3D4%7B5_@34.128.83.123:5432/jejakhijau'
+  _JWT_SECRET: '528f1e12a209b428543828d902099db4'
 
 options:
   logging: CLOUD_LOGGING_ONLY
