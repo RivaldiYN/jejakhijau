@@ -6,6 +6,7 @@
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsup src/server.ts --format cjs --out-dir dist",
     "start": "node dist/server.js",
+    "start:prod": "prisma migrate deploy && node dist/server.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",

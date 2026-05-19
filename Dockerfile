@@ -30,4 +30,4 @@ ENV NODE_ENV=production
 ENV PORT=3001
 
 # Start the API server
-CMD ["pnpm", "--filter", "@jejakhijau/api", "start"]
+CMD ["pnpm", "--filter", "@jejakhijau/api", "run", "start:prod"]

@@ -1,0 +1,41 @@
+FROM node:22-alpine AS builder
+
+# Install pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+# Copy workspace config and package.json files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/shared/package.json ./packages/shared/
+
+# Install dependencies specifically for admin
+RUN pnpm install --filter @jejakhijau/admin... --frozen-lockfile
+
+# Copy source code
+COPY apps/admin ./apps/admin
+COPY packages/shared ./packages/shared
+
+# Inject API URL during build time
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+# Build Admin App
+RUN pnpm --filter @jejakhijau/admin build
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+# Copy built assets to Nginx
+COPY --from=builder /app/apps/admin/dist /usr/share/nginx/html
+
+# Copy custom Nginx configuration for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Port configured for Google Cloud Run
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
