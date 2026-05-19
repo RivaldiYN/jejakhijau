@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  city          String
+  role          String   @default("user") // "user" | "admin"
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastCheckin   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  diaryEntries  DiaryEntry[]
+  userBadges    UserBadge[]
+
+  @@index([city])
+}
+
+// ─── Diary ────────────────────────────────────────────────────────────────────
+
+model DiaryEntry {
+  id            String   @id @default(uuid())
+  userId        String
+  entryDate     DateTime // stores date-only as midnight UTC
+  ojolKm        Float    @default(0)
+  angkotKm      Float    @default(0)
+  krlKm         Float    @default(0)
+  plastikCount  Int      @default(0)
+  listrikKwh    Float    @default(0)
+  mealType      String   @default("warteg")
+  bakarSampahKg Float    @default(0)
+  totalKgco2e   Float
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryDate])
+  @@index([userId, entryDate])
+  @@index([entryDate])
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
+model Badge {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  name        String
+  description String
+  iconUrl     String
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+// ─── City stats (materialised, updated on check-in) ───────────────────────────
+
+model CityStats {
+  city          String   @id
+  avgKgco2eDay  Float    @default(0)
+  avgKgco2eWeek Float    @default(0)
+  userCount     Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── Admin CMS ────────────────────────────────────────────────────────────────
+
+model EmissionFactorOverride {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g. "ojolPerKm", "meal.vegetarian"
+  value     Float
+  updatedBy String   // userId of admin
+  updatedAt DateTime @updatedAt
+}
+
+model Tip {
+  id          String   @id @default(uuid())
+  title       String
+  body        String
+  category    String   @default("general") // transport|food|energy|waste|general
+  isPublished Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Announcement {
+  id       String   @id @default(uuid())
+  title    String
+  body     String
+  ctaLabel String?
+  ctaUrl   String?
+  startsAt DateTime
+  endsAt   DateTime
+  isActive Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
