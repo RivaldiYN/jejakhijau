@@ -32,5 +32,5 @@ EXPOSE 8080
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Start the API server
-CMD ["pnpm", "--filter", "@jejakhijau/api", "run", "start:prod"]
+# Start the API server directly (bypass pnpm and prisma migrate to isolate the crash)
+CMD ["node", "apps/api/dist/server.js"]
