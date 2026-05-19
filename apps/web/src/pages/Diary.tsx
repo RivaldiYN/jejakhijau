@@ -28,8 +28,8 @@ const defaultForm = {
 }
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
-function Stepper({ value, unit, step, onDec, onInc }: {
-  value: number; unit: string; step: number
+function Stepper({ value, unit, onDec, onInc }: {
+  value: number; unit: string
   onDec: () => void; onInc: () => void
 }) {
   return (
@@ -53,7 +53,6 @@ function AiScanPanel({ onApply, onClose }: {
   onClose: () => void
 }) {
   const [preview, setPreview] = useState<string | null>(null)
-  const [mimeType, setMimeType] = useState<string>('')
   const [scanResult, setScanResult] = useState<any>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -64,7 +63,6 @@ function AiScanPanel({ onApply, onClose }: {
   })
 
   function handleFile(file: File) {
-    setMimeType(file.type)
     setScanResult(null)
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -329,7 +327,7 @@ export default function Diary() {
                     <p className="text-xs text-gray-400">{factor}</p>
                   </div>
                   <Stepper
-                    value={(form as any)[key]} unit={unit} step={step}
+                    value={(form as any)[key]} unit={unit}
                     onDec={() => set(key, (form as any)[key] - step)}
                     onInc={() => set(key, (form as any)[key] + step)}
                   />
@@ -383,7 +381,7 @@ export default function Diary() {
                       <p className="text-xs text-gray-400">{factor}</p>
                     </div>
                     <Stepper
-                      value={(form as any)[key]} unit={unit} step={step}
+                      value={(form as any)[key]} unit={unit}
                       onDec={() => set(key, (form as any)[key] - step)}
                       onInc={() => set(key, (form as any)[key] + step)}
                     />

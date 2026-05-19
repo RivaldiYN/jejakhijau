@@ -253,7 +253,7 @@ export default function Dashboard() {
                 <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ borderRadius: 10, border: '1px solid #F3F4F6', fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}
-                  formatter={(v: number) => [`${v} kgCO₂e`, 'Emisi']}
+                  formatter={(v: any) => [`${v} kgCO₂e`, 'Emisi']}
                 />
                 <ReferenceLine y={INDONESIA_DAILY_AVG} stroke="#F59E0B" strokeDasharray="4 4" strokeWidth={1.5} />
                 <Area type="monotone" dataKey="emisi" stroke="#3B6D11" fill="url(#grad)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#3B6D11', strokeWidth: 0 }} />
