@@ -1,4 +1,7 @@
-FROM node:22-alpine AS base
+FROM node:22-bookworm-slim AS base
+
+# Install OpenSSL for Prisma compatibility
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
@@ -25,9 +28,9 @@ RUN cd apps/api && pnpm db:generate
 # Build the API
 RUN pnpm --filter @jejakhijau/api build
 
-EXPOSE 3001
+EXPOSE 8080
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=8080
 
 # Start the API server
 CMD ["pnpm", "--filter", "@jejakhijau/api", "run", "start:prod"]
