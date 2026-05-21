@@ -1,75 +1,129 @@
 steps:
-  # 1. Build Backend API
+  # ── 1. Build Backend API ────────────────────────────────────────────────────
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jejakhijau-api:$COMMIT_SHA', '-f', 'Dockerfile', '.']
-  
-  # 2. Build Frontend Web (User) - Inject VITE_API_URL
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA', '--build-arg', 'VITE_API_URL=$_API_URL', '-f', 'Dockerfile.web', '.']
+    id: 'build-api'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/jejakhijau-api:$COMMIT_SHA'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
 
-  # 3. Build Frontend Admin - Inject VITE_API_URL
+  # ── 2. Build Frontend Web (User) ────────────────────────────────────────────
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA', '--build-arg', 'VITE_API_URL=$_API_URL', '-f', 'Dockerfile.admin', '.']
+    id: 'build-web'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA'
+      - '--build-arg'
+      - 'VITE_API_URL=$_API_URL'
+      - '-f'
+      - 'Dockerfile.web'
+      - '.'
 
-  # 4. Push Images to Artifact Registry
+  # ── 3. Build Frontend Admin ──────────────────────────────────────────────────
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-admin'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA'
+      - '--build-arg'
+      - 'VITE_API_URL=$_API_URL'
+      - '-f'
+      - 'Dockerfile.admin'
+      - '.'
+
+  # ── 4. Push Images ke Container Registry ────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-api'
     args: ['push', 'gcr.io/$PROJECT_ID/jejakhijau-api:$COMMIT_SHA']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA']
+    waitFor: ['build-api']
 
-  # 5. Deploy API to Cloud Run
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-web'
+    args: ['push', 'gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA']
+    waitFor: ['build-web']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-admin'
+    args: ['push', 'gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA']
+    waitFor: ['build-admin']
+
+  # ── 5. Deploy API ke Cloud Run ───────────────────────────────────────────────
+  #    Secrets (DATABASE_URL, JWT_SECRET, GEMINI_API_KEY) dibaca dari Secret Manager
+  #    oleh Cloud Run service saat runtime — tidak pernah di-expose ke build log.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-api'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'jejakhijau-api'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/jejakhijau-api:$COMMIT_SHA'
-      - '--region'
-      - '$_REGION'
+      - '--image=gcr.io/$PROJECT_ID/jejakhijau-api:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars'
-      - 'GEMINI_API_KEY=$_GEMINI_API_KEY,DATABASE_URL=$_DATABASE_URL,JWT_SECRET=$_JWT_SECRET,NODE_ENV=production'
+      - '--port=8080'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=3'
+      - '--set-env-vars=NODE_ENV=production,FRONTEND_URL=$_FRONTEND_URL,ADMIN_URL=$_ADMIN_URL'
+      - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest'
+    waitFor: ['push-api']
 
-  # 6. Deploy Web to Cloud Run
+  # ── 6. Deploy Web ke Cloud Run ───────────────────────────────────────────────
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-web'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'jejakhijau-web'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA'
-      - '--region'
-      - '$_REGION'
+      - '--image=gcr.io/$PROJECT_ID/jejakhijau-web:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--port'
-      - '80'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=3'
+    waitFor: ['push-web']
 
-  # 7. Deploy Admin to Cloud Run
+  # ── 7. Deploy Admin ke Cloud Run ─────────────────────────────────────────────
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-admin'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'jejakhijau-admin'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA'
-      - '--region'
-      - '$_REGION'
+      - '--image=gcr.io/$PROJECT_ID/jejakhijau-admin:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--port'
-      - '80'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=3'
+    waitFor: ['push-admin']
 
+# ── Substitution Variables ────────────────────────────────────────────────────
+# Nilai default di bawah ini AKAN DIGANTI di pengaturan Cloud Build Trigger.
+# Jangan simpan nilai rahasia (password, key) di sini.
 substitutions:
-  _REGION: 'asia-southeast2'   # Jakarta Region
-  _API_URL: 'https://jejakhijau-api-dummy.a.run.app' # Akan diisi di Trigger nanti
-  _GEMINI_API_KEY: 'AIzaSyAxQFdpXqvGTbyzJcM5cxvgVe1dpJgDvb0'
-  _DATABASE_URL: 'postgresql://postgres:qG%2FJt%7Bq%40V-%5E%3D4%7B5_@34.128.83.123:5432/jejakhijau'
-  _JWT_SECRET: '528f1e12a209b428543828d902099db4'
+  _REGION: 'asia-southeast2'
+  # Isi setelah deploy pertama selesai (URL bisa dilihat di Cloud Run Console):
+  _API_URL: 'https://jejakhijau-api-PLACEHOLDER.a.run.app'
+  _FRONTEND_URL: 'https://jejakhijau-web-PLACEHOLDER.a.run.app'
+  _ADMIN_URL: 'https://jejakhijau-admin-PLACEHOLDER.a.run.app'
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  # Build API, Web, Admin secara paralel untuk mempercepat pipeline
+  machineType: 'E2_HIGHCPU_8'
