@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../stores/adminAuth.store'
 import {
-  LayoutDashboard, Users, Award, Zap, Lightbulb, Megaphone, Trophy, LogOut, Leaf, ChevronRight
+  LayoutDashboard, Users, Award, Zap, Lightbulb, Megaphone, LogOut, Leaf
 } from 'lucide-react'
 
 const navItems = [
