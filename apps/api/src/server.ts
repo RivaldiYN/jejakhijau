@@ -21,11 +21,17 @@ async function main() {
 
   // ── Plugins ──────────────────────────────────────────────────────────────────
 
+  // Build allowed origins list from env vars (comma-separated) + fallback for dev
+  const allowedOrigins: (string | RegExp)[] = [
+    /https:\/\/.*\.run\.app$/,          // semua Cloud Run services
+    'http://localhost:5173',            // web dev
+    'http://localhost:5174',            // admin dev
+  ]
+  if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL)
+  if (process.env.ADMIN_URL)    allowedOrigins.push(process.env.ADMIN_URL)
+
   await app.register(cors, {
-    origin: [
-      process.env.FRONTEND_URL ?? 'http://localhost:5173',
-      process.env.ADMIN_URL ?? 'http://localhost:5174',
-    ],
+    origin: allowedOrigins,
     credentials: true,
   })
 
