@@ -20,7 +20,8 @@ COPY apps/web ./apps/web
 COPY packages/shared ./packages/shared
 
 # Inject API URL during build time
-ARG VITE_API_URL
+# Default ke production API URL — bisa di-override via build argument di Cloud Run
+ARG VITE_API_URL=https://jejakhijau-1014709687398.asia-southeast2.run.app
 ENV VITE_API_URL=$VITE_API_URL
 
 # Build Web App
