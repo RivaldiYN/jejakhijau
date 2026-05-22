@@ -37,6 +37,6 @@ ENV PORT=8080
 # prisma CLI tersedia di node_modules karena install --filter tidak exclude devDeps.
 WORKDIR /app/apps/api
 
-# Startup: jalankan migrasi dulu (non-fatal), lalu start server
-# Jika DATABASE_URL belum siap, migrasi di-skip dan server tetap start
-CMD ["sh", "-c", "npx prisma migrate deploy 2>&1 || echo 'WARNING: prisma migrate failed, skipping...' ; node dist/server.js"]
+# Startup: migrate dengan timeout 30s (non-fatal), lalu langsung start server
+# Server start dulu agar Cloud Run health check pass, migrate jalan background
+CMD ["sh", "-c", "timeout 30 npx prisma migrate deploy 2>&1 || echo 'WARNING: prisma migrate failed, skipping...' ; node dist/server.js"]
